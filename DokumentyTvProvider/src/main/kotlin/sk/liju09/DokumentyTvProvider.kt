@@ -1,14 +1,17 @@
 package sk.liju09
 
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.SearchResponse
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
+import org.jsoup.select.Elements
+import android.util.Log
 
 open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
     override var name = "Dokumenty.tv"
-    override val supportedTypes = setOf(TvType.Movie)
-
     override var lang = "en"
 
     // enable this when your provider has a main page
