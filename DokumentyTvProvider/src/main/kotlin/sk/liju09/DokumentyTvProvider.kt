@@ -4,7 +4,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 
-class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
+open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
     override var name = "Dokumenty.tv"
     override val supportedTypes = setOf(TvType.Movie)
