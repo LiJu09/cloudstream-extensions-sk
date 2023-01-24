@@ -91,7 +91,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
-                val embedUrl = iframe.attr("src")!!.let { it ->
+                val embedUrl = iframe!!.attr("src")!!.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
