@@ -91,10 +91,10 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
-                val embedUrl = iframe?.attr("src")?.let { it ->
+                val embedUrl = iframe.attr("src").let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
-                } ?: return@mapNotNull null
+                }
                 val img = iframe?.selectFirst("img")?.attr("src") 
 
 //                return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
@@ -116,7 +116,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
                 listOf(MovieLoadResponse(
                     title,
-                    embedUrl,
+                    url,
                     this.name,
                     TvType.Documentary,
                     embedUrl,
