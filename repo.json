@@ -1,0 +1,8 @@
+{
+    "name": "SK/CZ providers repository",
+    "description": "Cloudstream Slovak and Czech Plugin Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/LiJu09/cloudstream-extensions-sk/builds/plugins.json"
+    ]
+}

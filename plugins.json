@@ -1,0 +1,53 @@
+[
+    {
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/LiJu09/cloudstream-extensions-sk",
+        "fileSize": 30977,
+        "status": 1,
+        "language": "sk",
+        "authors": [
+            
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 2,
+        "internalName": "BombujProvider",
+        "url": "https://raw.githubusercontent.com/LiJu09/cloudstream-extensions-sk/builds/BombujProvider.cs3",
+        "name": "BombujProvider"
+    },
+    {
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/LiJu09/cloudstream-extensions-sk",
+        "fileSize": 12445,
+        "status": 1,
+        "authors": [
+            
+        ],
+        "tvTypes": [
+            "Documentary"
+        ],
+        "version": 1,
+        "internalName": "DokumentyTvProvider",
+        "url": "https://raw.githubusercontent.com/LiJu09/cloudstream-extensions-sk/builds/DokumentyTvProvider.cs3",
+        "name": "DokumentyTvProvider"
+    },
+    {
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/LiJu09/cloudstream-extensions-sk",
+        "fileSize": 26386,
+        "status": 1,
+        "language": "sk",
+        "authors": [
+            
+        ],
+        "tvTypes": [
+            "TvSeries"
+        ],
+        "version": 1,
+        "internalName": "SvetserialovProvider",
+        "url": "https://raw.githubusercontent.com/LiJu09/cloudstream-extensions-sk/builds/SvetserialovProvider.cs3",
+        "name": "SvetserialovProvider"
+    }
+]
