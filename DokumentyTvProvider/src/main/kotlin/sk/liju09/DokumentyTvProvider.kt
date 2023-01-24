@@ -94,7 +94,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 val embedUrl = iframe?.attr("src")?.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
-                }
+                } ?: return@mapNotNull null
                 val img = iframe?.selectFirst("img")?.attr("src") 
 
 //                return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
