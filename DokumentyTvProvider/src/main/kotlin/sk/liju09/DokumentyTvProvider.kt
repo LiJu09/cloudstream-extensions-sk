@@ -62,13 +62,13 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
         val title = document.select("h1.single-title").text().trim()
         val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
-        ) true else false
+        ) false else true
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
 
         val episodes = if (isSeries) {
             document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
             
-                val thumb = ep.selectFirst("img")!!.attr("src")
+                val thumb = ep.selectFirst("img").attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
