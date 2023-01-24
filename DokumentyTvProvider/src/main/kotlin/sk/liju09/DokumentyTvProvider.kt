@@ -87,6 +87,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     this.episode = epNum
                     this.posterUrl = thumb
                 }
+            }
 
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
