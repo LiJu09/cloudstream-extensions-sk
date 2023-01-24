@@ -64,7 +64,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
         ) false else true
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
-        val thumb = ep.selectFirst("img")?.attr("src")
+        //val thumb = ep.selectFirst("img")?.attr("src")
         val episodes = if (isSeries) {
             document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
                 val thumb = ep.selectFirst("img")?.attr("src")
