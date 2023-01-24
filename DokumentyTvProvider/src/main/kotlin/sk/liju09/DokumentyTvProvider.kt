@@ -25,7 +25,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val document = app.get(mainUrl).document
         val items = document.select(".nag div.item").mapNotNull{ it -> 
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val name = a.attr("title").trim()
+            val name = a.attr("title").trim().replace("Permalink to ", "")
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
@@ -60,30 +60,87 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val embedUrl = document.selectFirst("iframe[allowfullscreen]")?.attr("src")?.let { it ->
-            return@let if (it.startsWith("//")) "https:$it"
-            else it
-        }
         val title = document.select("h1.single-title").text().trim()
+        val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
+        ) true else false
+        val plot = document.selectFirst(".entry-content p").text().trim()
 
-        val plot = document.select(".single-post-content p").text().trim()
-        
-        return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
-            this.plot = plot
-            this.recommendations = document.select(".post-list-in-single article.cactus-post-item").mapNotNull{ it -> 
-                val a = it.selectFirst("h3 a") ?: return@mapNotNull null
-                val name = a.attr("title").trim()
-                val href = a.attr("href")
-                val img = it.selectFirst("img")?.attr("src")
-                newMovieSearchResponse(
-                    name,
-                    href,
-                    TvType.Documentary
-                ) {
-                    this.posterUrl = img
+        val episodes = if (isSeries) {
+            document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
+            
+                val thumb = ep.selectFirst("img")!!.attr("src")
+
+                val epLink = ep?.attr("src")?.let { it ->
+                    return@let if (it.startsWith("//")) "https:$it"
+                    else it
                 }
+
+                val season = 0
+                val epNum = index
+
+                //categories.addAll(
+                //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
+
+                newEpisode(epLink) {
+                    this.name = index
+                    this.season = season
+                    this.episode = epNum
+                    this.posterUrl = thumb
+                }
+
+            } else {
+                val iframe = document.selectFirst("iframe[allowfullscreen]")
+                val embedUrl = iframe?.attr("src")?.let { it ->
+                    return@let if (it.startsWith("//")) "https:$it"
+                    else it
+                }
+                val img = iframe.selectFirst("img")!!.attr("src") 
+
+//                return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
+//                    this.plot = plot
+//                    this.recommendations = document.select(".post-list-in-single article.cactus-post-item").mapNotNull{ it -> 
+//                        val a = it.selectFirst("h3 a") ?: return@mapNotNull null
+//                        val name = a.attr("title").trim()
+//                        val href = a.attr("href")
+//                        val img = it.selectFirst("img")?.attr("src")
+//                        newMovieSearchResponse(
+//                            name,
+//                            href,
+//                            TvType.Documentary
+//                        ) {
+//                            this.posterUrl = img
+//                        }
+//                    }
+//                }
+
+                listOf(MovieLoadResponse(
+                    title,
+                    embedUrl,
+                    this.name,
+                    TvType.Documentary,
+                    embedUrl,
+                    img,
+                    null,
+                    plot,
+                    null//,
+                    //soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
+                    //    .map { it.text().trim() }
+                ))
             }
-        }
+
+        return if (isSeries) TvSeriesLoadResponse(
+            title,
+            url,
+            this.name,
+            TvType.TvSeries,
+            episodes!!.map { it as Episode },
+            poster,
+            year,
+            plot,
+            null,
+            null//,
+            //categories.toList()
+        ) else (episodes?.first() as MovieLoadResponse)
     }
 
     override suspend fun loadLinks(
