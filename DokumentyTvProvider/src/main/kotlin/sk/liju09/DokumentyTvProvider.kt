@@ -12,7 +12,7 @@ import android.util.Log
 open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
     override var name = "Dokumenty.tv"
-    override var lang = "en"
+    override var lang = "cz"
 
     // enable this when your provider has a main page
     override val hasMainPage = true
@@ -25,7 +25,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val document = app.get(mainUrl).document
         val items = document.select(".nag div.item").mapNotNull{ it -> 
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val name = a.attr("title").trim().replace("Permalink to ", "")
+            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
@@ -42,9 +42,9 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        return document.select("article.cactus-post-item").mapNotNull{ it -> 
-            val a = it.selectFirst("h3 a") ?: return@mapNotNull null
-            val name = a.attr("title").trim()
+        return document.select(".nag div.item").mapNotNull{ it -> 
+            val a = it.selectFirst("h2 a") ?: return@mapNotNull null
+            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
@@ -64,10 +64,9 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
         ) false else true
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
-
+        val thumb = ep.selectFirst("img")?.attr("src")
         val episodes = if (isSeries) {
             document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
-            
                 val thumb = ep.selectFirst("img")?.attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
