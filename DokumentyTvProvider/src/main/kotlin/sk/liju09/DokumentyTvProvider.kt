@@ -63,7 +63,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val title = document.select("h1.single-title").text().trim()
         val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
         ) true else false
-        val plot = document.selectFirst(".entry-content p")?.text().trim()
+        val plot = document.selectFirst(".entry-content p")?.text()?.trim()
 
         val episodes = if (isSeries) {
             document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
@@ -91,11 +91,11 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
-                val embedUrl = iframe.attr("src").let { it ->
+                val embedUrl = iframe?.attr("src")?.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                val img = iframe.selectFirst("img")?.attr("src") 
+                val img = iframe?.selectFirst("img")?.attr("src") 
 
 //                return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
 //                    this.plot = plot
