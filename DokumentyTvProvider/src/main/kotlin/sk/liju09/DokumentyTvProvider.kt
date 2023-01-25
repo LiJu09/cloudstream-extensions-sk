@@ -1,9 +1,9 @@
 package sk.liju09
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import kotlin.time.Duration
 
 open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
@@ -77,22 +77,31 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
         if (isSeries) {
             val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
-                val thumb = ep.selectFirst(".vid-card_img")?.attr("src")
+//                val thumb = ep.selectFirst(".vid-card_img")?.attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
 
+                val epName = ep.selectFirst("span.vid-card_n")?.text()
+                    ?.replace("-dokument", "")
+                    ?.replace("www.Dokumenty.TV", "")
+                    ?.replace("()", "")
+                    ?.trim()
+                if (epName != null) {
+                    Log.d("DEBUGTV", epName)
+                } else {
+                    Log.d("DEBUGTV", "NO EPNAME")
+                }
+
                 //categories.addAll(
                 //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
                 newEpisode(epLink) {
-                    this.name = ep.selectFirst("span.vid-card_n")?.text()
-                        ?.replace("-dokument (www.Dokumenty.TV)", "")
-                        ?.trim()
+                    this.name = epName
                     this.episode = index
-                    this.posterUrl = thumb
+//                    this.posterUrl = thumb
                 }
             }
 
