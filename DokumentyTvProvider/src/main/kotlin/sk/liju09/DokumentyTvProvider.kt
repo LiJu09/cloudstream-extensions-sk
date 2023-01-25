@@ -1,6 +1,5 @@
 package sk.liju09
 
-import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -13,15 +12,33 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
     // enable this when your provider has a main page
     override val hasMainPage = true
 
+    override val mainPage = mainPageOf(
+        Pair("page/", "Najnovšie"),
+        Pair("category/historie/page/", "Najnovšie - Historické"),
+        Pair("category/katastroficke/page/", "Najnovšie - Katastrofické"),
+        Pair("category/konspirace/page/", "Najnovšie - Konspirace"),
+        Pair("category/krimi/page/", "Najnovšie - Krimi"),
+        Pair("category/mysleni/page/", "Najnovšie - Myšlení"),
+        Pair("category/prirodovedny-dokument/page/", "Najnovšie - Příroda"),
+        Pair("category/technika/page/", "Najnovšie - Technika"),
+        Pair("category/vesmir/page/", "Najnovšie - Vesmír"),
+        Pair("category/zahady/page/", "Najnovšie - Záhady"),
+        Pair("category/zivotni-styl/page/", "Najnovšie - Životní styl"),
+    )
+
     override val supportedTypes = setOf(
         TvType.Documentary
     )
 
     override suspend fun getMainPage(page: Int, request : MainPageRequest): HomePageResponse {
-        val document = app.get(mainUrl).document
-        val items = document.select(".nag div.item").mapNotNull{ it -> 
+
+        val document = app.get(
+            mainUrl + request.data + page.toString(),
+        ).document
+
+        val home = document.select(".nag div.item").mapNotNull {
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+            val name = a.attr("title").replace("Permalink to", "").split("-dokument")[0].trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
@@ -31,16 +48,34 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
             ) {
                 this.posterUrl = img
             }
-        }
-        return HomePageResponse(listOf(HomePageList("Najnovšie", items, isHorizontalImages = true)), false)
+        }.toList()
+
+        return newHomePageResponse(listOf(HomePageList(request.name, home, isHorizontalImages = true)))
+//        return newHomePageResponse(request.name, home)
+
+//        val document = app.get(mainUrl).document
+//        val items = document.select(".nag div.item").mapNotNull{ it ->
+//            val a = it.selectFirst("h2 a") ?: return@mapNotNull null
+//            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+//            val href = a.attr("href")
+//            val img = it.selectFirst("img")?.attr("src")
+//            newMovieSearchResponse(
+//                name,
+//                href,
+//                TvType.Documentary
+//            ) {
+//                this.posterUrl = img
+//            }
+//        }
+//        return HomePageResponse(listOf(HomePageList("Najnovšie", items, isHorizontalImages = true)), false)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        return document.select(".nag div.item").mapNotNull{ it -> 
+        return document.select(".nag div.item").mapNotNull{
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+            val name = a.attr("title").replace("Permalink to", "").split("-dokument")[0].trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
@@ -60,11 +95,11 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val isSeries = document.select("iframe[allowfullscreen]").size != 1
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
         //val thumb = ep.selectFirst("img")?.attr("src")
-        val recommendations = document.select(".nag div.item").mapNotNull{ it ->
+        val recommendations = document.select(".nag div.item").mapNotNull{
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val resName = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+            val resName = a.attr("title").replace("Permalink to", "").split("-dokument")[0].trim()
             val href = a.attr("href")
-            val img = it.selectFirst("img")?.attr("src")
+            val img = it.selectFirst("img")?.attr("src")?.replace("-160x90", "")
 
             newMovieSearchResponse(
                 resName,
@@ -75,6 +110,16 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
             }
         }
 
+        val image = document.selectFirst("meta[property=og:image]")?.attr("content")
+
+        // all tags
+        //val tags = document.select("#extras a").map { it.text() }
+
+        // only rel=category
+        val tags = document.select("#extras a").filter { it ->
+            it.attr("rel").equals("category tag")
+        }.map { it.text().trim() }
+
         if (isSeries) {
             val descriptions = document.select(".entry-content p").filter { it ->
                 it.text().isNotEmpty()
@@ -84,7 +129,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
             val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
 
-                val epLink = ep.attr("src").let { it ->
+                val epLink = ep.attr("src").let {
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
@@ -109,16 +154,13 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 }
             }
 
-            Log.d("DEBUGTV", "episodecount: ${episodes.size}")
-            Log.d("DEBUGTV", "descriptions: ${descriptions.size}")
-
             return TvSeriesLoadResponse(
                 name,
                 url,
                 this.name,
                 TvType.TvSeries,
                 episodes,
-                null, //image
+                image, //image
                 null,
                 if (episodesCount != descriptions.size) plot else null,
                 null,
@@ -126,6 +168,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 recommendations = recommendations,
                 //backgroundPosterUrl = img
                 //categories.toList()
+                tags = tags
             )
 
             } else {
@@ -134,16 +177,16 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                val embedIframe = app.get(embedUrl).document
-                val img = embedIframe.selectFirst(".vid-card_img")?.attr("src")
+                //val embedIframe = app.get(embedUrl).document
+                //val img = embedIframe.selectFirst(".vid-card_img")?.attr("src")
 
                 return MovieLoadResponse(
                     name,
                     url,
                     this.name,
-                    TvType.Documentary,
+                    TvType.Movie,
                     embedUrl,
-                    img,
+                    image,
                     null,
                     plot,
                     null,
@@ -151,6 +194,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     //backgroundPosterUrl = img
                     //soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
                     //    .map { it.text().trim() }
+                    tags = tags
                 )
             }
     }
