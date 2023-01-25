@@ -60,12 +60,12 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val isSeries = document.select("iframe[allowfullscreen]").size != 1
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
         //val thumb = ep.selectFirst("img")?.attr("src")
-
-        val recommendations = document.select(".releated-posts .nag div.item").mapNotNull{ it ->
+        val recommendations = document.select(".nag div.item").mapNotNull{ it ->
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
             val resName = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
+
             newMovieSearchResponse(
                 resName,
                 href,
@@ -76,24 +76,27 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         }
 
         if (isSeries) {
-            val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
-//                val thumb = ep.selectFirst(".vid-card_img")?.attr("src")
+            val descriptions = document.select(".entry-content p").filter { it ->
+                it.text().isNotEmpty()
+            }
 
-                val epLink = ep?.attr("src")?.let { it ->
+            val episodesCount = document.select("iframe[allowfullscreen]").size + 1
+
+            val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
+
+                val epLink = ep.attr("src").let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
 
-                val epName = ep.selectFirst("span.vid-card_n")?.text()
+                val epIframe = app.get(epLink).document
+
+                val epName = epIframe.selectFirst(".vid-card_n")?.text()
                     ?.replace("-dokument", "")
                     ?.replace("www.Dokumenty.TV", "")
                     ?.replace("()", "")
                     ?.trim()
-                if (epName != null) {
-                    Log.d("DEBUGTV", epName)
-                } else {
-                    Log.d("DEBUGTV", "NO EPNAME")
-                }
+                val thumb = epIframe.selectFirst(".vid-card_img")?.attr("src")
 
                 //categories.addAll(
                 //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
@@ -101,9 +104,13 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 newEpisode(epLink) {
                     this.name = epName
                     this.episode = index
-//                    this.posterUrl = thumb
+                    this.posterUrl = thumb
+                    this.description = if (episodesCount==descriptions.size) descriptions[index].text().trim() else null
                 }
             }
+
+            Log.d("DEBUGTV", "episodecount: ${episodes.size}")
+            Log.d("DEBUGTV", "descriptions: ${descriptions.size}")
 
             return TvSeriesLoadResponse(
                 name,
@@ -113,7 +120,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 episodes,
                 null, //image
                 null,
-                plot,
+                if (episodesCount != descriptions.size) plot else null,
                 null,
                 null,
                 recommendations = recommendations,
@@ -127,7 +134,8 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                val img = iframe.selectFirst(".vid-card_img")?.attr("src")
+                val embedIframe = app.get(embedUrl).document
+                val img = embedIframe.selectFirst(".vid-card_img")?.attr("src")
 
                 return MovieLoadResponse(
                     name,
