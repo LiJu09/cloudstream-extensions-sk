@@ -55,18 +55,18 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.select("h1.single-title").text().trim()
+        val name = document.select("h1.entry-title").text().replace("-dokument", "").trim()
         val isSeries = document.select("iframe[allowfullscreen]").size != 1
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
         //val thumb = ep.selectFirst("img")?.attr("src")
 
         val recommendations = document.select(".releated-posts .nag div.item").mapNotNull{ it ->
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+            val resName = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
             val href = a.attr("href")
             val img = it.selectFirst("img")?.attr("src")
             newMovieSearchResponse(
-                name,
+                resName,
                 href,
                 TvType.Documentary
             ) {
@@ -74,8 +74,8 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
             }
         }
 
-        val episodes = if (isSeries) {
-            document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
+        if (isSeries) {
+            val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
                 val thumb = ep.selectFirst("img")?.attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
@@ -83,30 +83,42 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     else it
                 }
 
-                val season = 0
-                val epNum = index
-
                 //categories.addAll(
                 //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
                 newEpisode(epLink) {
                     this.name = index.toString()
-                    this.season = season
-                    this.episode = epNum
+                    this.episode = index
                     this.posterUrl = thumb
                 }
             }
 
+            return TvSeriesLoadResponse(
+                name,
+                url,
+                this.name,
+                TvType.TvSeries,
+                episodes,
+                null, //image
+                null,
+                plot,
+                null,
+                null,
+                recommendations = recommendations,
+                //backgroundPosterUrl = img
+                //categories.toList()
+            )
+
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
-                val embedUrl = iframe!!.attr("src").let { it ->
+                val embedUrl = iframe!!.attr("src").let {
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
                 val img = iframe.selectFirst("img")?.attr("src")
 
-                listOf(MovieLoadResponse(
-                    title,
+                return MovieLoadResponse(
+                    name,
                     url,
                     this.name,
                     TvType.Documentary,
@@ -116,27 +128,11 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     plot,
                     null,
                     recommendations = recommendations,
-                    backgroundPosterUrl = img
+                    //backgroundPosterUrl = img
                     //soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
                     //    .map { it.text().trim() }
-                ))
+                )
             }
-
-        return if (isSeries) TvSeriesLoadResponse(
-            title,
-            url,
-            this.name,
-            TvType.TvSeries,
-            episodes.map { it as Episode },
-            null, //image
-            null,
-            plot,
-            null,
-            null,
-            recommendations = recommendations,
-            //backgroundPosterUrl = img
-            //categories.toList()
-        ) else (episodes.first() as MovieLoadResponse)
     }
 
     override suspend fun loadLinks(
