@@ -1,13 +1,8 @@
 package sk.liju09
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.Jsoup
-import org.jsoup.select.Elements
-import android.util.Log
 
 open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
@@ -61,12 +56,26 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val document = app.get(url).document
 
         val title = document.select("h1.single-title").text().trim()
-        val isSeries = if (document.select("iframe[allowfullscreen]").size == 1
-        ) false else true
+        val isSeries = document.select("iframe[allowfullscreen]").size != 1
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
         //val thumb = ep.selectFirst("img")?.attr("src")
+
+        val recommendations = document.select(".releated-posts .nag div.item").mapNotNull{ it ->
+            val a = it.selectFirst("h2 a") ?: return@mapNotNull null
+            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
+            val href = a.attr("href")
+            val img = it.selectFirst("img")?.attr("src")
+            newMovieSearchResponse(
+                name,
+                href,
+                TvType.Documentary
+            ) {
+                this.posterUrl = img
+            }
+        }
+
         val episodes = if (isSeries) {
-            document.select("iframe[allowfullscreen]")?.mapIndexed{ index, ep ->
+            document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
                 val thumb = ep.selectFirst("img")?.attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
@@ -90,28 +99,11 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
             } else {
                 val iframe = document.selectFirst("iframe[allowfullscreen]")
-                val embedUrl = iframe!!.attr("src")!!.let { it ->
+                val embedUrl = iframe!!.attr("src").let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                val img = iframe?.selectFirst("img")?.attr("src") 
-
-//                return newMovieLoadResponse(title, url, TvType.Documentary, embedUrl) {
-//                    this.plot = plot
-//                    this.recommendations = document.select(".post-list-in-single article.cactus-post-item").mapNotNull{ it -> 
-//                        val a = it.selectFirst("h3 a") ?: return@mapNotNull null
-//                        val name = a.attr("title").trim()
-//                        val href = a.attr("href")
-//                        val img = it.selectFirst("img")?.attr("src")
-//                        newMovieSearchResponse(
-//                            name,
-//                            href,
-//                            TvType.Documentary
-//                        ) {
-//                            this.posterUrl = img
-//                        }
-//                    }
-//                }
+                val img = iframe.selectFirst("img")?.attr("src")
 
                 listOf(MovieLoadResponse(
                     title,
@@ -122,7 +114,9 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     img,
                     null,
                     plot,
-                    null//,
+                    null,
+                    recommendations = recommendations,
+                    backgroundPosterUrl = img
                     //soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
                     //    .map { it.text().trim() }
                 ))
@@ -133,14 +127,16 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
             url,
             this.name,
             TvType.TvSeries,
-            episodes!!.map { it as Episode },
+            episodes.map { it as Episode },
             null, //image
             null,
             plot,
             null,
-            null//,
+            null,
+            recommendations = recommendations,
+            //backgroundPosterUrl = img
             //categories.toList()
-        ) else (episodes?.first() as MovieLoadResponse)
+        ) else (episodes.first() as MovieLoadResponse)
     }
 
     override suspend fun loadLinks(
@@ -153,7 +149,3 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         return true
     }
 }
-
-data class LinkElement(
-    @JsonProperty("src") val src: String
-)
