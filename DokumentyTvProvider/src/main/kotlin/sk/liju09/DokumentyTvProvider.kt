@@ -3,6 +3,7 @@ package sk.liju09
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlin.time.Duration
 
 open class DokumentyTvProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://dokumenty.tv/" 
@@ -76,7 +77,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
 
         if (isSeries) {
             val episodes = document.select("iframe[allowfullscreen]").mapIndexed{ index, ep ->
-                val thumb = ep.selectFirst("img")?.attr("src")
+                val thumb = ep.selectFirst(".vid-card_img")?.attr("src")
 
                 val epLink = ep?.attr("src")?.let { it ->
                     return@let if (it.startsWith("//")) "https:$it"
@@ -87,7 +88,9 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
                 newEpisode(epLink) {
-                    this.name = index.toString()
+                    this.name = ep.selectFirst("span.vid-card_n")?.text()
+                        ?.replace("-dokument (www.Dokumenty.TV)", "")
+                        ?.trim()
                     this.episode = index
                     this.posterUrl = thumb
                 }
@@ -115,7 +118,7 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                val img = iframe.selectFirst("img")?.attr("src")
+                val img = iframe.selectFirst(".vid-card_img")?.attr("src")
 
                 return MovieLoadResponse(
                     name,
