@@ -80,16 +80,20 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
 
         val name = document.select(".cele_info a h1").text().trim()
         val plot = document.selectFirst(".more")?.text()?.replace("... ", "")?.replace("(viac)", "")?.trim()
-
-        // TODO
-        val recommendations = document.select(".nag div.item").mapNotNull{
-            val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-            val resName = a.attr("title").replace("Permalink to", "").split("-dokument")[0].trim()
-            val href = a.attr("href")
-            val img = it.selectFirst("img")?.attr("src")?.replace("-160x90", "")
+        
+        val recommendations = document.select("#odpfilms > div > div").mapNotNull{
+            val recName = it.text().trim()
+            val href = it.selectFirst("a")!!.attr("href").let { recUrl ->
+                return@let if (recUrl.startsWith("//")) "https:$recUrl"
+                else recUrl
+            }
+            val img = it.select("img").attr("src").let { imgUrl ->
+                return@let if (imgUrl.startsWith("//")) "https:$imgUrl"
+                else imgUrl
+            }
 
             newMovieSearchResponse(
-                resName,
+                recName,
                 href,
                 TvType.Movie
             ) {
