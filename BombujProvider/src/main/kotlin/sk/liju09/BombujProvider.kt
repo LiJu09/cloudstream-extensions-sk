@@ -129,9 +129,9 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
     }
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        val url = "${mainUrl}android_api/search_film.php?q=$query"
-        val document = app.get(url).text
-        return tryParseJson<ResponseSearchList>(document)?.results?.map {
+        val movieUrl = "${mainUrl}android_api/search_film.php?q=$query"
+        val movieDocument = app.get(movieUrl).text
+        val movies = tryParseJson<ResponseMovieSearchList>(movieDocument)?.results?.map {
             val name = it.name
             val id = it.id
             val movie = tryParseJson<ResponseMovieList>(app.get("${mainUrl}android_api/filmy/getfilmjson.php?id=$id").text)?.film?.get(0)
@@ -146,6 +146,31 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 this.posterUrl = img
             }
         }
+        val seriesUrl = "${mainUrl}android_api/search_serial.php?q=$query"
+        val seriesDocument = app.get(seriesUrl).text
+        val series = tryParseJson<ResponseSeriesSearchList>(seriesDocument)?.results?.map {
+            val name = it.one
+            val id = it.id
+            val serie = tryParseJson<ResponseSeriesList>(app.get("${mainUrl}android_api/serialy/getserialjson.php?id=$id").text)?.serial?.get(0)
+            val href = "${mainSeriesUrl}serial-${serie?.url}"
+            val img = "${mainSeriesUrl}images/covers/${serie?.url}.jpg"
+
+            newTvSeriesSearchResponse(
+                name,
+                href,
+                TvType.TvSeries
+            ) {
+                this.posterUrl = img
+            }
+        }
+        val results = ArrayList<SearchResponse>()
+        if (movies != null) {
+            results.addAll(movies)
+        }
+        if (series != null) {
+            results.addAll(series)
+        }
+        return results
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -261,11 +286,11 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
         return true
     }
 
-    private data class ResponseSearchList(
-        @JsonProperty("results") val results: List<ResponseSearch>,
+    private data class ResponseMovieSearchList(
+        @JsonProperty("results") val results: List<ResponseMovieSearch>,
     )
 
-    private data class ResponseSearch(
+    private data class ResponseMovieSearch(
         @JsonProperty("name") val name: String,
         @JsonProperty("id") val id: String,
     )
@@ -301,5 +326,41 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
         @JsonProperty("popularne"        ) var popularne      : String? = null,
         @JsonProperty("fb_comm"          ) var fbComm         : String? = null,
         @JsonProperty("csfd_id"          ) var csfdId         : String? = null
+    )
+
+    private data class ResponseSeriesSearchList(
+        @JsonProperty("results_serialy") val results: List<ResponseSeriesSearch>,
+    )
+
+    private data class ResponseSeriesSearch(
+        @JsonProperty("0") val zero: String,
+        @JsonProperty("id") val id: String,
+        @JsonProperty("1") val one: String,
+        @JsonProperty("nazov_1") val nazov_1: String,
+    )
+
+    private data class ResponseSeriesList(
+        @JsonProperty("serial") val serial: List<ResponseSeries>,
+    )
+
+    private data class ResponseSeries(
+        @JsonProperty("id"             ) var id            : String? = null,
+        @JsonProperty("active"         ) var active        : String? = null,
+        @JsonProperty("nazov_1"        ) var nazov1        : String? = null,
+        @JsonProperty("nazov_2"        ) var nazov2        : String? = null,
+        @JsonProperty("nazov_3"        ) var nazov3        : String? = null,
+        @JsonProperty("url"            ) var url           : String? = null,
+        @JsonProperty("rok"            ) var rok           : String? = null,
+        @JsonProperty("zaner"          ) var zaner         : String? = null,
+        @JsonProperty("krajina"        ) var krajina       : String? = null,
+        @JsonProperty("reziser"        ) var reziser       : String? = null,
+        @JsonProperty("herci"          ) var herci         : String? = null,
+        @JsonProperty("obsah"          ) var obsah         : String? = null,
+        @JsonProperty("hodnotenie"     ) var hodnotenie    : String? = null,
+        @JsonProperty("views"          ) var views         : String? = null,
+        @JsonProperty("todayviews"     ) var todayviews    : String? = null,
+        @JsonProperty("viewtoday"      ) var viewtoday     : String? = null,
+        @JsonProperty("viewtoday_date" ) var viewtodayDate : String? = null,
+        @JsonProperty("dab"            ) var dab           : String? = null
     )
 }
