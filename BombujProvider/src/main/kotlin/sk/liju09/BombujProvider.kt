@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
@@ -188,6 +189,10 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
             }
 
             val tags = document.select("#serial > div:nth-child(1) > div:nth-child(1) > div:nth-child(4) > div:nth-child(1) > div:nth-child(1) > div:nth-child(4) > div:nth-child(2)").text().split("/").map { it.trim() }
+            val year = document.select("#serial > div:nth-child(1) > div:nth-child(1) > div:nth-child(4) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3)").text().split(" - ")[1].toInt()
+            val actors = document.select("div.more:nth-child(8)").text().replace("... ", "").replace("(viac)", "").split(",").map {
+                ActorData(Actor(it.trim()))
+            }
 
             val seasons = document.select(".table_cele")
             val episodeList = ArrayList<Episode>()
@@ -200,13 +205,15 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                     it.attr("href").let { itt -> return@let if (itt.startsWith("//")) "https:$itt" else itt }
                 }
                 episodes.map {
+                    val sources = app.get(it).document.select("li.selectedis").toString()
                     episodeList.add(
-                    newEpisode(it) {
-                        //this.name = name
-                        this.season = seasonNum
-                        this.episode = it.substringAfterLast("x").toInt()
-                    }
-                ) }
+                        newEpisode(sources) {
+                            //this.name = name
+                            this.season = seasonNum
+                            this.episode = it.substringAfterLast("x").toInt()
+                        }
+                    )
+                }
             }
             return TvSeriesLoadResponse(
                 name,
@@ -215,10 +222,11 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 TvType.TvSeries,
                 episodeList,
                 image,
-                null,
+                year,
                 plot,
                 null,
-                tags = tags
+                tags = tags,
+                actors = actors,
             )
         } else {
             val name = document.select(".cele_info a h1").text().trim()
@@ -249,7 +257,11 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 else it
             }
 
+            val year = document.select("h3.zaner_filmu").text().split(" - ")[0].toInt()
             val tags = document.select("h3.zaner_filmu").text().split(" - ")[1].trim().split("/").map { it.trim() }
+            val actors = document.select(".more_herci").text().substringAfter("HERCI:").replace("... ", "").replace("(viac)", "").split(",").map {
+                ActorData(Actor(it.trim()))
+            }
 
             val sources = document.select("li.selectedis").toString()
 
@@ -260,11 +272,12 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 TvType.Movie,
                 sources,
                 image,
-                null,
+                year,
                 plot,
                 null,
                 recommendations = recommendations,
-                tags = tags
+                tags = tags,
+                actors = actors,
             )
         }
     }
@@ -281,7 +294,18 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 else it
             }
             val src = app.get(link).document.select("iframe").attr("src")
-            loadExtractor(src, "", subtitleCallback, callback)
+            if (src.startsWith("https://hqq.to")) {
+                // until working hqq.to extractor
+                callback.invoke(ExtractorLink(
+                    "HQQ",
+                    "HQQ",
+                    link,
+                    "",
+                    Qualities.Unknown.value,
+                ))
+            } else {
+                loadExtractor(src, src, subtitleCallback, callback)
+            }
         }
         return true
     }

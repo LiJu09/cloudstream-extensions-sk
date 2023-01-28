@@ -51,23 +51,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         }.toList()
 
         return newHomePageResponse(listOf(HomePageList(request.name, home, isHorizontalImages = true)))
-//        return newHomePageResponse(request.name, home)
-
-//        val document = app.get(mainUrl).document
-//        val items = document.select(".nag div.item").mapNotNull{ it ->
-//            val a = it.selectFirst("h2 a") ?: return@mapNotNull null
-//            val name = a.attr("title").replace("Permalink to", "").replace("-dokument", "").trim()
-//            val href = a.attr("href")
-//            val img = it.selectFirst("img")?.attr("src")
-//            newMovieSearchResponse(
-//                name,
-//                href,
-//                TvType.Documentary
-//            ) {
-//                this.posterUrl = img
-//            }
-//        }
-//        return HomePageResponse(listOf(HomePageList("Najnovšie", items, isHorizontalImages = true)), false)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -94,7 +77,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
         val name = document.select("h1.entry-title").text().replace("-dokument", "").trim()
         val isSeries = document.select("iframe[allowfullscreen]").size != 1
         val plot = document.selectFirst(".entry-content p")?.text()?.trim()
-        //val thumb = ep.selectFirst("img")?.attr("src")
         val recommendations = document.select(".nag div.item").mapNotNull{
             val a = it.selectFirst("h2 a") ?: return@mapNotNull null
             val resName = a.attr("title").replace("Permalink to", "").split("-dokument")[0].trim()
@@ -143,9 +125,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     ?.trim()
                 val thumb = epIframe.selectFirst(".vid-card_img")?.attr("src")
 
-                //categories.addAll(
-                //    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
-
                 newEpisode(epLink) {
                     this.name = epName
                     this.episode = index
@@ -166,8 +145,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                 null,
                 null,
                 recommendations = recommendations,
-                //backgroundPosterUrl = img
-                //categories.toList()
                 tags = tags
             )
 
@@ -177,8 +154,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     return@let if (it.startsWith("//")) "https:$it"
                     else it
                 }
-                //val embedIframe = app.get(embedUrl).document
-                //val img = embedIframe.selectFirst(".vid-card_img")?.attr("src")
 
                 return MovieLoadResponse(
                     name,
@@ -191,9 +166,6 @@ open class DokumentyTvProvider : MainAPI() { // all providers must be an instanc
                     plot,
                     null,
                     recommendations = recommendations,
-                    //backgroundPosterUrl = img
-                    //soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
-                    //    .map { it.text().trim() }
                     tags = tags
                 )
             }
