@@ -130,45 +130,9 @@ open class SvetserialovProvider : MainAPI() { // all providers must be an instan
 //                    app.get(mainUrl + Base64.decode(epSrc.attr("data-iframe"), Base64.URL_SAFE).toString().substringAfter("/")).document.select("iframe").attr("src")
 //                }.toList()
                 val epUrl = it.attr("href").let { epit -> mainUrl + epit.substringAfter("/") }
-                Log.d("SVSEPURL", epUrl)
-                val sources = app.get(epUrl).document.select("ul.nunito a").map { epSrc ->
-                    val urll = mainUrl + Base64.decode(epSrc.attr("data-iframe"), Base64.DEFAULT).toString(Charsets.UTF_8).substringAfter("/")
-                    val toToken = app.get(
-                        urll,
-                        referer = epUrl
-                    ).document.toString()
-
-                    val token = toToken.substringAfter("'sitekey': '").substringBefore("',").let { captchaKey ->
-                        getCaptchaToken(
-                            urll,
-                            captchaKey,
-                            referer = urll
-                        )
-                    } ?: throw ErrorLoadingException("can't bypass captcha")
-
-                    val data = app.post(
-                        urll,
-                        data = mapOf(
-                            "g-recaptcha-response" to token
-                        ),
-                        referer = urll,
-                        headers = mapOf(
-                            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                            "Origin" to "https://svetserialov.to",
-                            "Alt-Used" to "svetserialov.to",
-                            "Sec-Fetch-Dest" to "iframe",
-                            "Sec-Fetch-Mode" to "navigate",
-                            "Sec-Fetch-Site" to "same-origin",
-                            "Referer" to urll,
-                            "User-Agent" to "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0"
-                        )
-                    ).document
-
-                    Log.d("SVSdata", token.toString())
-
-                    data.select("iframe").attr("src")
-                }
-                Log.d("SVSSRCS", sources.toString())
+//                Log.d("SVSEPURL", epUrl)
+                val sources = app.get(epUrl).document.select("ul.nunito a").toString()
+//                Log.d("SVSSRCS", sources.toString())
                 episodeList.add(
                     newEpisode(sources) {
                         this.name = epName
@@ -200,7 +164,47 @@ open class SvetserialovProvider : MainAPI() { // all providers must be an instan
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        loadExtractor(data, data, subtitleCallback, callback)
+        Log.d("SVSurll", Jsoup.parse(data).select("a").toString())
+        Jsoup.parse(data).select("a").apmap { epSrc ->
+            val urll = mainUrl + Base64.decode(epSrc.attr("data-iframe"), Base64.DEFAULT).toString(Charsets.UTF_8).substringAfter("/")
+            Log.d("SVSurll", urll.toString())
+            val toToken = app.get(
+                urll,
+                referer = urll
+            ).document
+
+            val token = toToken.toString().substringAfter("'sitekey': '").substringBefore("',").let { captchaKey ->
+                getCaptchaToken(
+                    urll,
+                    captchaKey,
+                    referer = urll
+                )
+            } ?: throw ErrorLoadingException("can't bypass captcha")
+
+            val epDoc = app.post(
+                urll,
+                data = mapOf(
+                    "g-recaptcha-response" to token
+                ),
+                referer = urll,
+                headers = mapOf(
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Content-Type" to "application/x-www-form-urlencoded",
+                    "Origin" to "https://svetserialov.to",
+                    "Sec-Fetch-Dest" to "iframe",
+                    "Sec-Fetch-Mode" to "navigate",
+                    "Sec-Fetch-Site" to "same-origin",
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"
+                )
+            ).document
+
+            Log.d("SVSdata", epDoc.toString())
+
+            val src = epDoc.select("iframe").attr("src")
+
+            loadExtractor(src, src, subtitleCallback, callback)
+
+        }
         return true
     }
 
