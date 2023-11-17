@@ -1,5 +1,6 @@
 package sk.liju09
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -293,8 +294,9 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 return@let if (it.startsWith("//")) "https:$it"
                 else it
             }
-            val preSrs = app.get(link).document.split.("frameborder=\"0\" src=\"")[1].split("\"></iframe>")[0]
-            val src = app.get(preSrs).document.select("iframe").attr("src")
+            var preSrc = app.get(link).document.toString().split("frameborder=\"0\" src=\"")[1].split("\"></iframe>")[0]
+            if (preSrc.startsWith("//")) {preSrc = "https:$preSrc"}
+            val src = app.get("https:$preSrc").document.select("iframe").attr("src")
             if (src.startsWith("https://hqq.to")) {
                 // until working hqq.to extractor
                 callback.invoke(ExtractorLink(
