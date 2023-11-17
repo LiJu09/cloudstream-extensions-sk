@@ -293,7 +293,8 @@ open class BombujProvider : MainAPI() { // all providers must be an instance of 
                 return@let if (it.startsWith("//")) "https:$it"
                 else it
             }
-            val src = app.get(link).document.select("iframe").attr("src")
+            val preSrs = app.get(link).document.split.("frameborder=\"0\" src=\"")[1].split("\"></iframe>")[0]
+            val src = app.get(preSrs).document.select("iframe").attr("src")
             if (src.startsWith("https://hqq.to")) {
                 // until working hqq.to extractor
                 callback.invoke(ExtractorLink(
